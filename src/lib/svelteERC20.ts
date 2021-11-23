@@ -17,17 +17,22 @@ const ERC20_ABI = [
 ]
 
 
-function svelteERC20(
-    address: string,
-    providerOrSigner: ethers.providers.Provider | ethers.Signer
-) {
-    if(address.length <= 0){
-        throw Error("!Address")
-    }
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+function svelteERC20() {
     const refresh = writable(0)
+    const erc20Contract = writable<ethers.Contract>(null)
     
-    const erc20Contract = writable<ethers.Contract>(new ethers.Contract(address, ERC20_ABI, providerOrSigner))
-    
+    function init(
+        address: string,
+        providerOrSigner: ethers.providers.Provider | ethers.Signer
+    ) {
+        if(address.length <= 0){
+            throw Error("!Address")
+        }
+
+        erc20Contract.set(new ethers.Contract(address, ERC20_ABI, providerOrSigner))
+    }
+
     const transferEvent = readable([], (set) => {
         const eventHandle = (from, to, value) => {
             set([from, to, value])
@@ -50,6 +55,29 @@ function svelteERC20(
         return () => {
             get(erc20Contract).off("Approval", eventHandle)
         }
+    })
+
+    const name = derived([erc20Contract], async ([$contract]) => {
+        const name = await $contract.name()
+        return name
+    })
+
+    const symbol = derived([erc20Contract], async ([$contract]) => {
+        const symbol = await $contract.symbol()
+
+        console.log(symbol)
+
+        return symbol
+    })
+
+    const decimals = derived([erc20Contract], async ([$contract]) => {
+        const decimals = await $contract.decimals()
+        return decimals
+    })
+
+    const totalSupply = derived([erc20Contract], async ([$contract]) => {
+        const totalSupply = await $contract.totalSupply()
+        return totalSupply
     })
 
     function allowance(owner: string, spender: string) {
@@ -86,17 +114,60 @@ function svelteERC20(
         }
     }
 
+    async function transferFrom(from: string, to: string, value: ethers.BigNumber) {
+        if(from.length <= 0 || to.length <= 0){
+            throw Error("!Address")
+        }
+
+        try {
+            const _contract = get(erc20Contract)
+
+            const transferTX = await _contract.transferFrom(from, to, value);
+
+            await transferTX.wait()
+
+            refresh.update((val) => val++)
+
+            return transferTX
+        } catch(e) {
+            throw typeof e
+        }
+    }
+
+    async function approve(spender: string, value: ethers.BigNumber) {
+        if(spender.length <= 0){
+            throw Error("!Address")
+        }
+
+        try {
+            const _contract = get(erc20Contract)
+
+            const transferTX = await _contract.transferFrom(spender, value);
+
+            await transferTX.wait()
+
+            refresh.update((val) => val++)
+
+            return transferTX
+        } catch(e) {
+            throw typeof e
+        }
+    }
+
     return {
         contract: erc20Contract,
-
-        transfer,
-
+        init,
+        transferFrom,
         allowance,
         balanceOf,
-
+        transfer,
+        approve,
+        name,
+        symbol,
+        decimals,
+        totalSupply,
         transferEvent,
         approvalEvent,
-
     }
 }
 
