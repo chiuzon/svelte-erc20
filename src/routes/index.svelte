@@ -3,12 +3,10 @@ import { ethers } from "ethers";
 import svelteERC20 from "$lib/svelteERC20";
 
 const provider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com")
-
 let ercAddress;
+let erc20Bal
 
 const {contract, init: initToken0, symbol, balanceOf, decimals} = svelteERC20()
-
-let erc20Bal
 
 $: ethers.utils.isAddress(ercAddress) && (() => {
     initToken0(ercAddress, provider)
@@ -16,9 +14,11 @@ $: ethers.utils.isAddress(ercAddress) && (() => {
     erc20Bal = balanceOf("0xc2132D05D31c914a87C6611C10748AEb04B58e8F")
 })()
 
-</script>
+$: $contract && $decimals.then((res) => {
+    console.log(res)
+})
 
-<h1>svelteERC20</h1>
+</script>
 
 <input type="text" bind:value={ercAddress} placeholder="erc20 address" >
 
@@ -37,3 +37,4 @@ $: ethers.utils.isAddress(ercAddress) && (() => {
         {decimals.toString()}
     {/await}
 {/if}
+

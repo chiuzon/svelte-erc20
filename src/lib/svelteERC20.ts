@@ -58,11 +58,19 @@ function svelteERC20() {
     })
 
     const name = derived([erc20Contract], async ([$contract]) => {
+        if(!$contract){
+            return undefined
+        }
+
         const name = await $contract.name()
         return name
     })
 
     const symbol = derived([erc20Contract], async ([$contract]) => {
+        if(!$contract){
+            return undefined
+        }
+
         const symbol = await $contract.symbol()
 
         console.log(symbol)
@@ -71,17 +79,29 @@ function svelteERC20() {
     })
 
     const decimals = derived([erc20Contract], async ([$contract]) => {
+        if(!$contract){
+            return undefined
+        }
+
         const decimals = await $contract.decimals()
         return decimals
     })
 
     const totalSupply = derived([erc20Contract], async ([$contract]) => {
+        if(!$contract){
+            return undefined
+        }
+
         const totalSupply = await $contract.totalSupply()
         return totalSupply
     })
 
     function allowance(owner: string, spender: string) {
         return derived([erc20Contract, refresh], async ([$contract]) => {
+            if(!$contract){
+                return undefined
+            }
+            
             const allowance = await $contract.allowance(owner, spender)
             return allowance
         })
@@ -89,6 +109,10 @@ function svelteERC20() {
 
     function balanceOf(owner: string) {
         return derived([erc20Contract, refresh], async ([$contract]) => {
+            if(!$contract){
+                return undefined
+            }
+
             const balance = await $contract.balanceOf(owner)
             return balance
         })
@@ -122,13 +146,13 @@ function svelteERC20() {
         try {
             const _contract = get(erc20Contract)
 
-            const transferTX = await _contract.transferFrom(from, to, value);
+            const transferFromTX = await _contract.transferFrom(from, to, value);
 
-            await transferTX.wait()
+            await transferFromTX.wait()
 
             refresh.update((val) => val++)
 
-            return transferTX
+            return transferFromTX
         } catch(e) {
             throw typeof e
         }
@@ -142,13 +166,13 @@ function svelteERC20() {
         try {
             const _contract = get(erc20Contract)
 
-            const transferTX = await _contract.transferFrom(spender, value);
+            const approveTX = await _contract.transferFrom(spender, value);
 
-            await transferTX.wait()
+            await approveTX.wait()
 
             refresh.update((val) => val++)
 
-            return transferTX
+            return approveTX
         } catch(e) {
             throw typeof e
         }
